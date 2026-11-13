@@ -3,7 +3,7 @@ import Vapor
 
 final class Loan: Model, @unchecked Sendable {
     static let schema = "loans"
-    static let durationInDays = 13
+    static let durationInDays = 14
 
     @ID(key: .id)
     var id: UUID?
@@ -46,8 +46,23 @@ extension Loan {
 }
 
 extension Game {
+//    var isAvailable: Bool {
+//        !($loans.value ?? []).contains { $0.returnedAt == nil }
+//    }
+
     // Requires the `loans` relation to be loaded.
     var isAvailable: Bool {
-        !($loans.value ?? []).contains { $0.returnedAt == nil }
+        // 1. Je récupère les emprunts du jeu (ou une liste vide s'ils ne sont pas chargés)
+        let emprunts = $loans.value ?? []
+
+        // 2. Je regarde chaque emprunt un par un
+        for emprunt in emprunts {
+            // 3. S'il n'a pas de date de retour, le jeu est encore sorti
+            if emprunt.returnedAt == nil {
+                return false   // pas disponible
+            }
+        }
+        // 4. Aucun emprunt en cours trouvé
+        return true            // disponible
     }
 }
