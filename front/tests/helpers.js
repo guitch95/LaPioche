@@ -1,5 +1,6 @@
 // Outils pour tester le front sans serveur : une fausse API remplace `fetch`.
 import { API_URL } from "../config.js";
+import { SESSION_KEY } from "../api.js";
 import { waitFor } from "./runner.js";
 
 // Construit une réponse HTTP. `body` est converti en JSON (undefined : pas de corps).
@@ -15,14 +16,15 @@ export function jsonResponse(status, body) {
 //   "POST /games": [201, { id: "2" }]                           -> statut et corps choisis
 //   "GET /members/1/loans": ({ body }) => [200, []]             -> fonction appelée à chaque requête
 // Les paramètres de recherche sont d'abord cherchés tels quels ("GET /games?q=cat"), puis sans.
-// `calls` garde la liste des requêtes reçues : { method, path, search, body }.
+// `calls` garde la liste des requêtes reçues : { method, path, search, body, headers }.
 export function fakeApi(routes) {
   const calls = [];
   const fetchStub = async (input, init = {}) => {
     const url = new URL(input);
     const method = init.method ?? "GET";
     const body = init.body ? JSON.parse(init.body) : undefined;
-    const call = { method, path: url.pathname, search: url.search, body };
+    const headers = init.headers ?? {};
+    const call = { method, path: url.pathname, search: url.search, body, headers };
     calls.push(call);
 
     let handler = routes[`${method} ${url.pathname}${url.search}`] ?? routes[`${method} ${url.pathname}`];
@@ -51,9 +53,28 @@ export async function withFakeFetch(fetchStub, action) {
   }
 }
 
+// Session enregistrée par défaut avant de charger la page : la plupart des
+// tests portent sur la ludothèque, donc on démarre connecté·e.
+export const testSession = { token: "test-token", email: "staff@example.com" };
+
+// Lit et écrit la session comme le fait api.js. L'iframe a la même origine
+// que la page de tests : elle partage son sessionStorage.
+export function readSession() {
+  return JSON.parse(sessionStorage.getItem(SESSION_KEY));
+}
+export function writeSession(session) {
+  if (session) {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } else {
+    sessionStorage.removeItem(SESSION_KEY);
+  }
+}
+
 // Charge la vraie page index.html dans un iframe, branchée sur une fausse API.
+// `session: null` démarre sans session (écran de connexion).
 // Renvoie { win, doc, $, calls, click, type }.
-export async function mountApp(routes, { hash = "" } = {}) {
+export async function mountApp(routes, { hash = "", session = testSession } = {}) {
+  writeSession(session);
   const api = fakeApi(routes);
   const pageURL = new URL("../index.html", import.meta.url);
   const html = await (await fetch(pageURL)).text();

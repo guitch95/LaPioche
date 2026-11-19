@@ -9,7 +9,8 @@
   <body>
     <header class="topbar">
       <h1>La Pioche</h1>
-      <nav aria-label="Sections">
+      <!-- Navigation et session : affichées seulement une fois connecté·e (app.js). -->
+      <nav id="app-nav" aria-label="Sections" hidden>
         <a href="#games" data-tab="games">Jeux</a>
         <a href="#members" data-tab="members">Adhérent·es</a>
         <a href="#overdueloan" data-tab="overdueloan">Emprunts dépassés</a>
@@ -17,9 +18,68 @@
       <a class="docs-link" id="docs-link" href="http://localhost:8081/"
         >Documentation API</a
       >
+      <div id="session" class="session" hidden>
+        <span id="current-user" class="current-user"></span>
+        <button type="button" id="logout">Se déconnecter</button>
+      </div>
     </header>
 
-    <main>
+    <!-- Écran de connexion : remplace la ludothèque tant qu'il n'y a pas de session. -->
+    <section id="auth" class="auth" hidden>
+      <p id="auth-message" class="auth-message" role="alert" hidden></p>
+
+      <form id="login-form" class="auth-form" novalidate>
+        <h2>Se connecter</h2>
+        <label
+          >Adresse e-mail
+          <input type="email" name="email" autocomplete="username" required
+        /></label>
+        <label
+          >Mot de passe
+          <input
+            type="password"
+            name="password"
+            autocomplete="current-password"
+            required
+        /></label>
+        <p class="form-error" role="alert" hidden></p>
+        <div class="actions">
+          <button type="submit" class="primary">Se connecter</button>
+        </div>
+        <p class="auth-switch">
+          Pas encore de compte ?
+          <a href="#" data-auth-switch="register">Créer un compte</a>
+        </p>
+      </form>
+
+      <form id="register-form" class="auth-form" novalidate hidden>
+        <h2>Créer un compte</h2>
+        <label
+          >Adresse e-mail
+          <input type="email" name="email" autocomplete="username" required
+        /></label>
+        <label
+          >Mot de passe
+          <input
+            type="password"
+            name="password"
+            autocomplete="new-password"
+            minlength="8"
+            required
+        /></label>
+        <p class="hint">8 caractères minimum.</p>
+        <p class="form-error" role="alert" hidden></p>
+        <div class="actions">
+          <button type="submit" class="primary">Créer le compte</button>
+        </div>
+        <p class="auth-switch">
+          Déjà un compte ?
+          <a href="#" data-auth-switch="login">Se connecter</a>
+        </p>
+      </form>
+    </section>
+
+    <main id="app" hidden>
       <section id="games" class="tab" hidden>
         <div class="container-filter">
           <form id="search-form" action="" method="get">

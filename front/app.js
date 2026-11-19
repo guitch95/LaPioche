@@ -1,5 +1,5 @@
 import { API_URL } from "./config.js";
-import { api } from "./api.js";
+import { api, getSession, setUnauthorizedHandler } from "./api.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 
@@ -40,7 +40,10 @@ async function run(action) {
   try {
     await action();
   } catch (error) {
-    toast(error.message, true);
+    // Un 401 ramène déjà à l'écran de connexion avec son message : pas de toast en double.
+    if (error.status !== 401) {
+      toast(error.message, true);
+    }
   }
 }
 
@@ -81,6 +84,10 @@ function currentTab() {
 }
 
 async function refresh() {
+  // Sans session, rien à charger : l'écran de connexion est affiché.
+  if (!getSession()) {
+    return;
+  }
   const tab = currentTab();
   for (const name of tabs) {
     $(`#${name}`).hidden = name !== tab;
@@ -96,6 +103,79 @@ async function refresh() {
 }
 
 window.addEventListener("hashchange", refresh);
+
+// --- Connexion -------------------------------------------------------------
+
+const loginForm = $("#login-form");
+const registerForm = $("#register-form");
+
+// Affiche le formulaire de connexion ("login") ou de création de compte
+// ("register"). Les champs déjà saisis sont conservés.
+function showAuthForm(name) {
+  loginForm.hidden = name !== "login";
+  registerForm.hidden = name !== "register";
+  showFormError(loginForm, null);
+  showFormError(registerForm, null);
+}
+
+// Écran de connexion à la place de la ludothèque. `message` explique
+// pourquoi on y revient (session expirée…).
+function showAuth(message = "") {
+  for (const dialog of document.querySelectorAll("dialog[open]")) {
+    dialog.close();
+  }
+  $("#app").hidden = true;
+  $("#app-nav").hidden = true;
+  $("#session").hidden = true;
+  $("#auth").hidden = false;
+  $("#auth-message").textContent = message;
+  $("#auth-message").hidden = !message;
+  showAuthForm("login");
+}
+
+// Ludothèque, avec l'adresse de la personne connectée.
+async function showApp() {
+  $("#auth").hidden = true;
+  $("#current-user").textContent = getSession().email;
+  $("#session").hidden = false;
+  $("#app-nav").hidden = false;
+  $("#app").hidden = false;
+  await refresh();
+}
+
+// En cas d'erreur, le message s'affiche dans le formulaire, qui n'est pas vidé.
+function bindAuthForm(form, action) {
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    showFormError(form, null);
+    const data = new FormData(form);
+    try {
+      await action(data.get("email").trim(), data.get("password"));
+      form.reset(); // succès : on ne laisse pas le mot de passe dans la page
+      await showApp();
+    } catch (error) {
+      showFormError(form, error);
+    }
+  });
+}
+
+bindAuthForm(loginForm, api.login);
+bindAuthForm(registerForm, api.register);
+
+for (const link of document.querySelectorAll("[data-auth-switch]")) {
+  link.addEventListener("click", (event) => {
+    event.preventDefault(); // href="#" : ne pas changer l'onglet
+    showAuthForm(link.dataset.authSwitch);
+  });
+}
+
+$("#logout").addEventListener("click", () => {
+  api.logout();
+  showAuth();
+});
+
+// L'API a refusé le jeton : retour à l'écran de connexion avec l'explication.
+setUnauthorizedHandler(showAuth);
 
 // --- Jeux ------------------------------------------------------------------
 
@@ -321,8 +401,6 @@ bindSubmit(memberDialog, memberForm, (data) =>
   }),
 );
 
-refresh();
-
 // Modification Adhérent -----------------------------------------------
 
 const modifyMemberDialog = $("#modify-member-dialog");
@@ -518,3 +596,12 @@ function searchGames() {
 $("#btn-cancel-search").addEventListener("click", () => {
   run(loadGames);
 });
+
+// --- Démarrage -------------------------------------------------------------
+// Une session gardée dans l'onglet (rechargement de la page) : on reprend
+// directement la ludothèque. Sinon : écran de connexion.
+if (getSession()) {
+  showApp();
+} else {
+  showAuth();
+}

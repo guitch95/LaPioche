@@ -58,6 +58,8 @@ export async function run() {
       item.textContent = `✗ ${name} : ${error.message}`;
     } finally {
       document.querySelectorAll("iframe[data-test-frame]").forEach((frame) => frame.remove());
+      sessionStorage.clear(); // chaque test repart sans session
+
     }
     output.append(item);
   }
