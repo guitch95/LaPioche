@@ -44,7 +44,7 @@ struct LoanController: RouteCollection {
             .first()
             == nil
         else {
-            throw Abort(.conflict, reason: "Game already loaned")
+            throw Abort(.conflict, reason: "Game is already on loan")
         }
 
         let now = Date()
@@ -64,7 +64,7 @@ struct LoanController: RouteCollection {
         let loan = try await findLoan(req)
 
         guard loan.returnedAt == nil else {
-            throw Abort(.conflict, reason: "Loan already returned")
+            throw Abort(.conflict, reason: "Loan is already returned")
         }
 
         loan.returnedAt = .now
