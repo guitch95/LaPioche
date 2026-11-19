@@ -77,7 +77,7 @@ struct MemberController: RouteCollection {
             .first() != nil
 
         if emailAlreadyUsed && member.email != input.email {
-            throw Abort(.conflict, reason: "Cet email est déjà utilisé.")
+            throw Abort(.conflict, reason: "A member with this email already exists")
         }
 
         member.email = input.email
@@ -100,7 +100,7 @@ struct MemberController: RouteCollection {
             throw Abort(
                 .badRequest,
                 reason:
-                    "Impossible to delete a member who has or had a loan."
+                    "A member with loans cannot be deleted"
             )
         }
 

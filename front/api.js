@@ -25,20 +25,24 @@ const fieldLabels = {
 };
 
 const knownMessages = {
-  "minPlayers must not exceed maxPlayers": "Le nombre minimum de joueur·ses ne peut pas dépasser le maximum.",
+  "minPlayers must not exceed maxPlayers":
+    "Le nombre minimum de joueur·ses ne peut pas dépasser le maximum.",
   "Game not found": "Ce jeu n'existe pas ou a déjà été supprimé.",
-  "Member not found": "Cet·te adhérent·e n'existe pas ou a déjà été supprimé·e.",
+  "Member not found":
+    "Cet·te adhérent·e n'existe pas ou a déjà été supprimé·e.",
   "Loan not found": "Cet emprunt n'existe pas.",
   "Invalid game id": "L'identifiant du jeu n'est pas valide.",
   "Invalid member id": "L'identifiant de l'adhérent·e n'est pas valide.",
   "Invalid loan id": "L'identifiant de l'emprunt n'est pas valide.",
-  "Game is already on loan": "Ce jeu est déjà emprunté : il faut d'abord le rendre.",
+  "Game is already on loan":
+    "Ce jeu est déjà emprunté : il faut d'abord le rendre.",
   "Loan is already returned": "Cet emprunt a déjà été rendu.",
   "A game with loans cannot be deleted":
     "Suppression impossible : ce jeu a un historique d'emprunts, conservé même quand le jeu est rendu.",
   "A member with loans cannot be deleted":
     "Suppression impossible : cet·te adhérent·e a un historique d'emprunts, conservé même quand tout est rendu.",
-  "A member with this email already exists": "Un·e autre adhérent·e utilise déjà cette adresse e-mail.",
+  "A member with this email already exists":
+    "Un·e autre adhérent·e utilise déjà cette adresse e-mail.",
 };
 
 // Les erreurs de validation de Vapor arrivent regroupées :
@@ -93,7 +97,10 @@ async function request(method, path, body) {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    throw new ApiError(0, "Impossible de joindre le serveur. Vérifiez qu'il est bien lancé.");
+    throw new ApiError(
+      0,
+      "Impossible de joindre le serveur. Vérifiez qu'il est bien lancé.",
+    );
   }
   if (response.status === 204) {
     return null;
@@ -101,17 +108,32 @@ async function request(method, path, body) {
   const data = await response.json().catch(() => null);
   if (!response.ok) {
     // Vapor renvoie { error: true, reason: "..." }
-    throw new ApiError(response.status, translateError(response.status, data?.reason));
+    throw new ApiError(
+      response.status,
+      translateError(response.status, data?.reason),
+    );
   }
   return data;
 }
 
 export const api = {
-  listGames: () => request("GET", "/games"),
+  listGames: (filters = {}) => {
+    const query = new URLSearchParams(filters).toString();
+    return request("GET", `/games?${query}`);
+  },
   createGame: (game) => request("POST", "/games", game),
+  modifyGame: (game) => request("PUT", `/games/${game.id}`, game),
+  deleteGame: (game) => request("DELETE", `/games/${game.id}`),
+
+  listLoans: () => request("GET", "/loans"),
+  returnLoan: (loan) => request("POST", `/loans/${loan.id}/return`),
+  overdueLoan: () => request("GET", "/loans/overdue"),
 
   listMembers: () => request("GET", "/members"),
+  listMemberLoans: (member) => request("GET", `/members/${member.id}/loans`),
   createMember: (member) => request("POST", "/members", member),
+  modifyMember: (member) => request("PUT", `/members/${member.id}`, member),
+  deleteMember: (member) => request("DELETE", `/members/${member.id}`),
 
   borrow: (gameID, memberID) => request("POST", "/loans", { gameID, memberID }),
 };

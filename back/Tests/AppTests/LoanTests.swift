@@ -8,7 +8,7 @@ final class LoanTests: XCTestCase {
         memberID: UUID,
         afterResponse: (XCTHTTPResponse) async throws -> Void
     ) async throws {
-        try await app.test(.POST, "loans", beforeRequest: { req in
+        try await app.authTest(.POST, "loans", beforeRequest: { req in
             try req.content.encode(CreateLoanDTO(gameID: gameID, memberID: memberID))
         }, afterResponse: afterResponse)
     }
@@ -55,7 +55,7 @@ final class LoanTests: XCTestCase {
 
             try await borrow(app, gameID: gameID, memberID: try XCTUnwrap(member.id)) { _ in }
 
-            try await app.test(.GET, "games/\(gameID)", afterResponse: { res async throws in
+            try await app.authTest(.GET, "games/\(gameID)", afterResponse: { res async throws in
                 XCTAssertFalse(try res.content.decode(GameDTO.self).isAvailable)
             })
         }

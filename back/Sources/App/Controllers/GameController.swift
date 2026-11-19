@@ -61,16 +61,17 @@ struct GameController: RouteCollection {
     @Sendable
     func updateGame(req: Request) async throws -> GameDTO {
         try CreateGameDTO.validate(content: req)
-        let input = try req.content.decode(CreateGameDTO.self)
+        let dto = try req.content.decode(CreateGameDTO.self)
+        try dto.ensureConsistentPlayerCount()
         let game = try await findGame(req)
 
-        game.title = input.title
-        game.minPlayers = input.minPlayers
-        game.maxPlayers = input.maxPlayers
-        game.durationMinutes = input.durationMinutes
+        game.title = dto.title
+        game.minPlayers = dto.minPlayers
+        game.maxPlayers = dto.maxPlayers
+        game.durationMinutes = dto.durationMinutes
+
         try await game.update(on: req.db)
         return game.toDTO()
-
     }
 
     @Sendable
@@ -86,7 +87,7 @@ struct GameController: RouteCollection {
             throw Abort(
                 .badRequest,
                 reason:
-                    "Impossible to delete game loaned or who has been loaned"
+                    "A game with loans cannot be deleted"
             )
         }
 
