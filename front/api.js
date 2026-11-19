@@ -5,8 +5,6 @@ import { API_URL } from "./config.js";
 
 // --- Session -----------------------------------------------------------------
 
-// Le jeton est gardé le temps de l'onglet : sessionStorage survit à un
-// rechargement de la page mais disparaît quand on ferme l'onglet.
 export const SESSION_KEY = "lapioche.session";
 
 export function getSession() {
@@ -28,8 +26,6 @@ export function clearSession() {
   sessionStorage.removeItem(SESSION_KEY);
 }
 
-// app.js s'abonne ici pour revenir à l'écran de connexion quand l'API refuse
-// le jeton. api.js ne touche pas à l'écran lui-même.
 let onUnauthorized = () => {};
 
 export function setUnauthorizedHandler(handler) {

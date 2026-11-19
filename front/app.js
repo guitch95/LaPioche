@@ -109,8 +109,7 @@ window.addEventListener("hashchange", refresh);
 const loginForm = $("#login-form");
 const registerForm = $("#register-form");
 
-// Affiche le formulaire de connexion ("login") ou de création de compte
-// ("register"). Les champs déjà saisis sont conservés.
+// Affiche le formulaire de connexion ou de création de compte ou connexion
 function showAuthForm(name) {
   loginForm.hidden = name !== "login";
   registerForm.hidden = name !== "register";
@@ -118,8 +117,7 @@ function showAuthForm(name) {
   showFormError(registerForm, null);
 }
 
-// Écran de connexion à la place de la ludothèque. `message` explique
-// pourquoi on y revient (session expirée…).
+// Écran de connexion
 function showAuth(message = "") {
   for (const dialog of document.querySelectorAll("dialog[open]")) {
     dialog.close();
@@ -598,8 +596,6 @@ $("#btn-cancel-search").addEventListener("click", () => {
 });
 
 // --- Démarrage -------------------------------------------------------------
-// Une session gardée dans l'onglet (rechargement de la page) : on reprend
-// directement la ludothèque. Sinon : écran de connexion.
 if (getSession()) {
   showApp();
 } else {
